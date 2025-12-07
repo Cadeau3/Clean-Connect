@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CleanConnect • Community Cleaning Scheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --muted:#6b7280; --primary:#0b84ff; --accent:#10b981;
+    --radius:12px; --shadow: 0 8px 20px rgba(12,18,25,0.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:#0b1b1a}
+  .wrap{max-width:1100px;margin:20px auto;padding:18px}
+  header{display:flex;gap:12px;align-items:center}
+  .logo{width:56px;height:56px;border-radius:12px;background:var(--card);display:flex;align-items:center;justify-content:center;font-weight:800;box-shadow:var(--shadow)}
+  h1{margin:0;font-size:20px}
+  .subtitle{color:var(--muted);font-size:13px;margin-top:6px}
+  .panels{display:grid;grid-template-columns:1fr 420px;gap:14px;margin-top:16px}
+  @media(max-width:980px){.panels{grid-template-columns:1fr}}
+  .card{background:var(--card);padding:14px;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid rgba(10,15,20,0.03)}
+  .row{display:flex;gap:10px;align-items:center}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+  select,input,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #e6e9ee;background:#fff}
+  button{cursor:pointer}
+  .btn{background:var(--primary);color:#fff;padding:10px 12px;border-radius:10px;border:0;font-weight:700}
+  .ghost{background:#fff;border:1px solid #e6e9ee;padding:9px;border-radius:10px}
+  .service{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;border:1px solid rgba(10,15,20,0.03);margin-bottom:8px}
+  .emoji{font-size:34px;width:66px;height:66px;border-radius:12px;background:#f3f4f6;display:flex;align-items:center;justify-content:center}
+  .meta{flex:1}
+  .small{font-size:13px;color:var(--muted)}
+  .cleaner{display:flex;gap:10px;align-items:center;padding:8px;border-radius:10px;border:1px solid #f0f2f5;margin-bottom:8px}
+  .cleaner .badge{font-size:20px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .summary{background:#f8fafb;padding:10px;border-radius:10px;border:1px solid #eef2f6}
+  .footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}
+  .muted{color:var(--muted)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .jobs-list{max-height:260px;overflow:auto;margin-top:10px}
+  .job-item{padding:10px;border-radius:8px;border:1px solid #eef2f6;margin-bottom:8px;background:#fff}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">CC</div>
+      <div>
+        <h1>CleanConnect • Community Cleaning Scheduler</h1>
+        <div class="subtitle">Find reliable local cleaners, schedule tasks, and estimate fair pricing — client-side demo</div>
+      </div>
+    </header>
+
+    <div class="panels">
+      <!-- LEFT: Services & Scheduler -->
+      <section class="card">
+        <strong>Choose a service</strong>
+        <div class="small" style="margin-top:6px">Select a cleaning type to auto-fill duration & base price</div>
+
+        <div id="services" style="margin-top:12px"></div>
+
+        <div style="margin-top:14px" class="grid-2">
+          <div>
+            <label>Date</label>
+            <input type="date" id="date" />
+          </div>
+          <div>
+            <label>Time</label>
+            <input type="time" id="time" />
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:10px">
+          <div>
+            <label>Estimated hours</label>
+            <input id="hours" type="number" min="0.5" step="0.5" value="2" />
+          </div>
+          <div>
+            <label>Number of rooms</label>
+            <input id="rooms" type="number" min="1" step="1" value="1" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Urgency</label>
+          <select id="urgency">
+            <option value="normal">Normal (scheduled)</option>
+            <option value="same-day">Same-day (20% surcharge)</option>
+            <option value="urgent">Urgent (50% surcharge)</option>
+          </select>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Notes (optional)</label>
+          <textarea id="notes" rows="3" placeholder="e.g., 2 adults + 1 small child, pets"></textarea>
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <button id="calcBtn" class="btn">Calculate Price</button>
+          <button id="bookBtn" class="ghost">Save Job</button>
+        </div>
+
+        <div style="margin-top:12px" class="summary">
+          <div style="display:flex;justify-content:space-between"><div class="muted">Service</div><div id="s_service">—</div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><div class="muted">Estimated hours</div><div id="s_hours">—</div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><div class="muted">Rooms</div><div id="s_rooms">—</div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px"><div class="muted">Urgency</div><div id="s_urgency">—</div></div>
+          <hr style="margin:8px 0;border:none;border-top:1px solid #eef2f6" />
+          <div style="display:flex;justify-content:space-between;font-weight:700"><div>Total estimate</div><div id="s_total">KES 0</div></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <strong>Available cleaners</strong>
+          <div class="small" style="margin-top:6px">Tap a cleaner to pre-select them for the job</div>
+          <div id="cleaners" style="margin-top:10px"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Jobs, export, saved -->
+      <aside class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Saved Jobs</strong><div class="small">Manage local saved bookings</div></div>
+          <div class="small">Tax included</div>
+        </div>
+
+        <div class="actions" style="margin-top:10px">
+          <button id="loadBtn" class="ghost">Refresh</button>
+          <button id="exportBtn" class="btn">Export CSV</button>
+          <button id="clearBtn" class="ghost">Clear All</button>
+        </div>
+
+        <div class="jobs-list" id="jobsList"></div>
+
+        <div style="margin-top:10px">
+          <label>Saved name (short)</label>
+          <input id="saveName" placeholder="e.g., Mother's House 2025-12-10" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="saveNow" class="btn" style="flex:1">Save Current Job</button>
+            <button id="deleteSel" class="ghost" style="flex:1">Delete Selected</button>
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label>Selected job</label>
+          <select id="selectJob" style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ee">
+            <option value="">-- choose saved job --</option>
+          </select>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="loadSelected" class="btn" style="flex:1">Load</button>
+            <button id="removeSelected" class="ghost" style="flex:1">Remove</button>
+          </div>
+        </div>
+
+        <div class="footer" style="margin-top:14px">CleanConnect • Built by Lynette — client-side demo for portfolio/admissions</div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+/* ===== Data ===== */
+const SERVICES = [
+  {id:'house', title:'House cleaning', emoji:'🏠', baseHour:200, estHours:3, desc:'General home cleaning: sweep, mop, dust, surfaces.'},
+  {id:'deep', title:'Deep cleaning', emoji:'🧼', baseHour:350, estHours:5, desc:'Deep clean: appliances, grout, thorough sanitation.'},
+  {id:'laundry', title:'Laundry & ironing', emoji:'🧺', baseHour:120, estHours:2, desc:'Washing, drying & ironing per load.'},
+  {id:'yard', title:'Yard & outdoor', emoji:'🌿', baseHour:180, estHours:2, desc:'Yard sweep, trimming, outdoor cleaning.'},
+  {id:'kitchen', title:'Kitchen & dishes', emoji:'🍽️', baseHour:150, estHours:1.5, desc:'Dishes, counters, light appliance cleaning.'}
+];
+
+const CLEANERS = [
+  {id:'c1', name:'Amina', emoji:'👩🏽‍🦱', rating:4.9, estPerHour:210, bio:'Trusted local cleaner, 5y experience', avail:true},
+  {id:'c2', name:'Peter', emoji:'👨🏾‍🔧', rating:4.7, estPerHour:200, bio:'Fast & reliable, specializes in deep cleans', avail:true},
+  {id:'c3', name:'Grace', emoji:'👩🏿‍🦰', rating:4.8, estPerHour:190, bio:'Laundry & detail cleaning expert', avail:false},
+  {id:'c4', name:'Samuel', emoji:'👨🏽‍🍳', rating:4.6, estPerHour:180, bio:'Outdoor/yard specialist', avail:true}
+];
+
+/* ===== State ===== */
+let state = {
+  serviceId: SERVICES[0].id,
+  cleanerId: null
+};
+
+/* ===== Helpers ===== */
+const $ = id => document.getElementById(id);
+const currency = v => 'KES ' + Number(Math.round(v)).toLocaleString();
+
+/* ===== Render services & cleaners ===== */
+function renderServices(){
+  const el = $('services'); el.innerHTML = '';
+  SERVICES.forEach(s=>{
+    const d = document.createElement('div');
+    d.className = 'service';
+    d.innerHTML = `
+      <div class="emoji">${s.emoji}</div>
+      <div class="meta">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div><strong>${s.title}</strong><div class="small">${s.desc}</div></div>
+          <div style="text-align:right"><div class="small">Base/hr</div><div style="font-weight:700">${currency(s.baseHour)}</div></div>
+        </div>
+      </div>
+    `;
+    d.onclick = ()=> {
+      state.serviceId = s.id; highlightSelectedService();
+      // prefill estimated hours if empty
+      if(!$('hours').value) $('hours').value = s.estHours;
+      updateSummary();
+    };
+    d.dataset.id = s.id;
+    el.appendChild(d);
+  });
+  highlightSelectedService();
+}
+
+function highlightSelectedService(){
+  document.querySelectorAll('#services .service').forEach(node=>{
+    node.style.borderColor = node.dataset.id === state.serviceId ? '#cdeffd' : 'rgba(10,15,20,0.03)';
+    node.style.boxShadow = node.dataset.id === state.serviceId ? '0 6px 18px rgba(13,110,253,0.06)' : 'none';
+  });
+}
+
+function renderCleaners(){
+  const el = $('cleaners'); el.innerHTML = '';
+  CLEANERS.forEach(c=>{
+    const div = document.createElement('div'); div.className = 'cleaner';
+    div.innerHTML = `
+      <div class="badge" style="font-size:26px">${c.emoji}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between"><strong>${c.name}</strong><div class="small">${c.rating} ★</div></div>
+        <div class="small">${c.bio} ${c.avail? '• Available':'• Unavailable'}</div>
+      </div>
+    `;
+    div.onclick = ()=> {
+      if(!c.avail) return alert(c.name + ' is currently unavailable — choose another cleaner or save without a cleaner.');
+      state.cleanerId = c.id;
+      document.querySelectorAll('#cleaners .cleaner').forEach(n=> n.style.borderColor = 'transparent');
+      div.style.borderColor = '#cdeffd';
+      div.style.boxShadow = '0 6px 18px rgba(13,110,253,0.06)';
+    };
+    el.appendChild(div);
+  });
+}
+
+/* ===== Pricing logic =====
+   Base price = baseHour * hours
+   room modifier: +10% per room above 1
+   urgency multiplier: same-day +20%, urgent +50%
+   cleaner selected may affect price slightly (average perHour)
+   tax not explicitly added (prices are final estimates)
+*/
+function calculatePrice(){
+  const svc = SERVICES.find(s=>s.id === state.serviceId);
+  const hours = Math.max(0.5, parseFloat($('hours').value) || svc.estHours);
+  const rooms = Math.max(1, parseInt($('rooms').value) || 1);
+  const urgency = $('urgency').value;
+
+  let base = svc.baseHour * hours;
+  // room modifier
+  if(rooms > 1) base *= (1 + 0.10 * (rooms - 1));
+  // urgency
+  if(urgency === 'same-day') base *= 1.20;
+  if(urgency === 'urgent') base *= 1.50;
+  // cleaner modifier
+  if(state.cleanerId){
+    const c = CLEANERS.find(x=>x.id === state.cleanerId);
+    if(c) {
+      const avg = (svc.baseHour + c.estPerHour) / 2;
+      // slight smoothing to reflect cleaner price
+      base = (base + avg * hours) / 2;
+    }
+  }
+  return Math.round(base);
+}
+
+/* ===== UI update ===== */
+function updateSummary(){
+  const svc = SERVICES.find(s=>s.id === state.serviceId);
+  $('s_service').textContent = svc ? svc.title : '—';
+  $('s_hours').textContent = $('hours').value || svc.estHours;
+  $('s_rooms').textContent = $('rooms').value || 1;
+  $('s_urgency').textContent = $('urgency').value;
+  const total = calculatePrice();
+  $('s_total').textContent = currency(total);
+}
+
+/* ===== Jobs (localStorage) ===== */
+function loadJobs(){
+  const jobs = [];
+  for(const k in localStorage){
+    if(k.startsWith('cc_job_')){
+      try { jobs.push({key:k, data: JSON.parse(localStorage.getItem(k))}); } catch(e){}
+    }
+  }
+  // sort by savedAt desc
+  jobs.sort((a,b)=> (b.data.savedAt || 0) - (a.data.savedAt || 0));
+  renderJobsList(jobs);
+  populateSelect(jobs);
+}
+
+function renderJobsList(jobs){
+  const el = $('jobsList'); el.innerHTML = '';
+  if(jobs.length === 0) el.innerHTML = '<div class="small muted">No saved jobs yet</div>';
+  jobs.forEach(j=>{
+    const d = j.data;
+    const div = document.createElement('div'); div.className = 'job-item';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between">
+        <div><strong>${d.name || 'Saved Job'}</strong><div class="small">${d.serviceTitle} • ${d.date} ${d.time}</div></div>
+        <div style="text-align:right">${currency(d.total)}</div>
+      </div>
+      <div style="margin-top:6px" class="small">${d.notes || ''}</div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="ghost" data-key="${j.key}" onclick="loadJobFromKey(this)">Load</button>
+        <button class="ghost" data-key="${j.key}" onclick="deleteJobFromKey(this)">Delete</button>
+      </div>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function populateSelect(jobs){
+  const sel = $('selectJob'); sel.innerHTML = '<option value="">-- choose saved job --</option>';
+  jobs.forEach(j=>{
+    const opt = document.createElement('option'); opt.value = j.key; opt.textContent = (j.data.name || 'Saved Job') + ' — ' + (j.data.date || '');
+    sel.appendChild(opt);
+  });
+}
+
+function saveCurrentJob(){
+  const name = $('saveName').value.trim() || prompt('Enter a short name for this job:') || ('job-' + Date.now());
+  const svc = SERVICES.find(s=>s.id === state.serviceId);
+  const data = {
+    name,
+    serviceId: state.serviceId,
+    serviceTitle: svc.title,
+    cleanerId: state.cleanerId,
+    date: $('date').value || '',
+    time: $('time').value || '',
+    hours: parseFloat($('hours').value) || svc.estHours,
+    rooms: parseInt($('rooms').value) || 1,
+    urgency: $('urgency').value,
+    notes: $('notes').value || '',
+    total: calculatePrice(),
+    savedAt: Date.now()
+  };
+  const key = 'cc_job_' + name.replace(/\s+/g,'_') + '_' + Date.now();
+  localStorage.setItem(key, JSON.stringify(data));
+  alert('Saved: ' + name);
+  $('saveName').value = '';
+  loadJobs();
+}
+
+function loadSelectedJob(){
+  const key = $('selectJob').value;
+  if(!key) return alert('Choose a saved job to load');
+  const data = JSON.parse(localStorage.getItem(key));
+  if(!data) return alert('Could not read job');
+  // load into UI
+  state.serviceId = data.serviceId;
+  state.cleanerId = data.cleanerId || null;
+  $('date').value = data.date || '';
+  $('time').value = data.time || '';
+  $('hours').value = data.hours || 1;
+  $('rooms').value = data.rooms || 1;
+  $('urgency').value = data.urgency || 'normal';
+  $('notes').value = data.notes || '';
+  highlightSelectedService();
+  // highlight cleaner if selected
+  document.querySelectorAll('#cleaners .cleaner').forEach(n=> n.style.borderColor = 'transparent');
+  if(state.cleanerId){
+    const idx = CLEANERS.findIndex(c=>c.id===state.cleanerId);
+    if(idx>=0) document.querySelectorAll('#cleaners .cleaner')[idx].style.borderColor = '#cdeffd';
+  }
+  updateSummary();
+  alert('Loaded job: ' + (data.name || 'Saved Job'));
+}
+
+function deleteSelectedJob(){
+  const key = $('selectJob').value;
+  if(!key) return alert('Choose a saved job to delete');
+  if(!confirm('Delete this saved job?')) return;
+  localStorage.removeItem(key);
+  loadJobs();
+}
+
+/* helpers for inline buttons */
+function loadJobFromKey(btn){
+  const key = btn.getAttribute('data-key');
+  $('selectJob').value = key;
+  loadSelectedJob();
+}
+function deleteJobFromKey(btn){
+  const key = btn.getAttribute('data-key');
+  if(!confirm('Delete this saved job?')) return;
+  localStorage.removeItem(key);
+  loadJobs();
+}
+
+/* export CSV */
+function exportCSV(){
+  const rows = [];
+  for(const k in localStorage){
+    if(k.startsWith('cc_job_')){
+      try{ const d = JSON.parse(localStorage.getItem(k)); rows.push(d); }catch(e){}
+    }
+  }
+  if(rows.length===0) return alert('No saved jobs to export');
+  let csv = 'name,service,date,time,hours,rooms,urgency,total,notes\\n';
+  rows.forEach(r=>{
+    csv += `"${(r.name||'')}", "${r.serviceTitle}", "${r.date}", "${r.time}", ${r.hours}, ${r.rooms}, "${r.urgency}", ${r.total}, "${(r.notes||'')}"\\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'cleanconnect_jobs.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+/* clear all saved jobs */
+function clearAllJobs(){
+  if(!confirm('Clear all saved jobs from this browser?')) return;
+  const keys = [];
+  for(const k in localStorage) if(k.startsWith('cc_job_')) keys.push(k);
+  keys.forEach(k=> localStorage.removeItem(k));
+  loadJobs();
+}
+
+/* delete selected key (button) */
+function removeSelected(){
+  deleteSelectedJob();
+}
+
+/* on page init */
+function init(){
+  renderServices();
+  renderCleaners();
+  updateSummary();
+  loadJobs();
+  // wire events
+  $('calcBtn').onclick = updateSummary;
+  $('bookBtn').onclick = ()=> { updateSummary(); alert('Use "Save Current Job" on the right to persist this booking'); };
+  $('saveNow').onclick = saveCurrentJob;
+  $('loadBtn').onclick = loadJobs;
+  $('exportBtn').onclick = exportCSV;
+  $('clearBtn').onclick = clearAllJobs;
+  $('loadSelected').onclick = loadSelectedJob;
+  $('removeSelected').onclick = deleteSelectedJob;
+  $('deleteSel').onclick = deleteSelectedJob;
+  $('selectJob').onchange = ()=> { /* selection changed */ };
+  // allow quick save with ctrl/cmd+S
+  document.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); saveCurrentJob(); }});
+}
+init();
+</script>
+</body>
+  </html>
